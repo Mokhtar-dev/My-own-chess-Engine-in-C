@@ -1,2 +1,0 @@
-I am building a chess engine using C and just knew the file structure
-and i will begin working on the project 

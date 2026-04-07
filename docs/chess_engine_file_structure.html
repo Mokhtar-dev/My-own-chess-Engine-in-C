@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chess Engine File Structure</title>
+<style>
+  body {
+    margin: 0;
+    padding: 24px;
+    background: #1a1a1a;
+    font-family: 'Courier New', monospace;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    box-sizing: border-box;
+  }
+  svg {
+    max-width: 680px;
+    width: 100%;
+  }
+</style>
+</head>
+<body>
+<svg width="100%" viewBox="0 0 680 720" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </marker>
+  <style>
+    .t  { font-family: 'Courier New', monospace; font-size: 14px; font-weight: 400; fill: #e2e2e2; }
+    .ts { font-family: 'Courier New', monospace; font-size: 12px; font-weight: 400; fill: #9a9a9a; }
+    .th { font-family: 'Courier New', monospace; font-size: 14px; font-weight: 600; fill: #f0f0f0; }
+    .arr { stroke: #666; stroke-width: 1.5; fill: none; }
+
+    /* c-gray */
+    .c-gray rect, .c-gray circle, .c-gray ellipse { fill: #2a2a2a; stroke: #555; }
+    /* c-purple */
+    .c-purple rect { fill: #2d2040; stroke: #7f77dd; }
+    .c-purple .th { fill: #afa9ec; }
+    .c-purple .ts { fill: #7f77dd; }
+    /* c-blue */
+    .c-blue rect { fill: #0c1e35; stroke: #378add; }
+    .c-blue .th { fill: #85b7eb; }
+    .c-blue .ts { fill: #378add; }
+    /* c-teal */
+    .c-teal rect { fill: #083028; stroke: #1d9e75; }
+    .c-teal .th { fill: #5dcaa5; }
+    .c-teal .ts { fill: #1d9e75; }
+    /* c-amber */
+    .c-amber rect { fill: #2e1a04; stroke: #ba7517; }
+    .c-amber .th { fill: #ef9f27; }
+    .c-amber .ts { fill: #ba7517; }
+    /* leader */
+    .leader { stroke: #555; stroke-width: 0.5; stroke-dasharray: 4 4; fill: none; }
+  </style>
+</defs>
+
+<!-- Root container -->
+<g class="c-gray">
+  <rect x="40" y="20" width="600" height="680" rx="16" stroke-width="0.5"/>
+  <text class="th" x="340" y="50" text-anchor="middle">chess_engine/</text>
+</g>
+
+<!-- src/ -->
+<g class="c-purple">
+  <rect x="60" y="70" width="360" height="440" rx="12" stroke-width="0.5"/>
+  <text class="th" x="80" y="96">src/</text>
+</g>
+
+<!-- src files -->
+<g class="c-blue">
+  <rect x="80" y="108" width="320" height="44" rx="8" stroke-width="0.5"/>
+  <text class="th" x="100" y="126" dominant-baseline="central">board.c / board.h</text>
+  <text class="ts" x="100" y="141" dominant-baseline="central">Bitboards, piece positions, FEN parser</text>
+</g>
+
+<g class="c-blue">
+  <rect x="80" y="162" width="320" height="44" rx="8" stroke-width="0.5"/>
+  <text class="th" x="100" y="180" dominant-baseline="central">movegen.c / movegen.h</text>
+  <text class="ts" x="100" y="195" dominant-baseline="central">Legal move generation, attack tables</text>
+</g>
+
+<g class="c-blue">
+  <rect x="80" y="216" width="320" height="44" rx="8" stroke-width="0.5"/>
+  <text class="th" x="100" y="234" dominant-baseline="central">search.c / search.h</text>
+  <text class="ts" x="100" y="249" dominant-baseline="central">Alpha-beta, iterative deepening, TT</text>
+</g>
+
+<g class="c-blue">
+  <rect x="80" y="270" width="320" height="44" rx="8" stroke-width="0.5"/>
+  <text class="th" x="100" y="288" dominant-baseline="central">eval.c / eval.h</text>
+  <text class="ts" x="100" y="303" dominant-baseline="central">Material, PST, pawn structure, mobility</text>
+</g>
+
+<g class="c-blue">
+  <rect x="80" y="324" width="320" height="44" rx="8" stroke-width="0.5"/>
+  <text class="th" x="100" y="342" dominant-baseline="central">tt.c / tt.h</text>
+  <text class="ts" x="100" y="357" dominant-baseline="central">Transposition table (hash map)</text>
+</g>
+
+<g class="c-blue">
+  <rect x="80" y="378" width="320" height="44" rx="8" stroke-width="0.5"/>
+  <text class="th" x="100" y="396" dominant-baseline="central">uci.c / uci.h</text>
+  <text class="ts" x="100" y="411" dominant-baseline="central">UCI protocol I/O, command loop</text>
+</g>
+
+<g class="c-blue">
+  <rect x="80" y="432" width="320" height="44" rx="8" stroke-width="0.5"/>
+  <text class="th" x="100" y="450" dominant-baseline="central">utils.c / utils.h</text>
+  <text class="ts" x="100" y="465" dominant-baseline="central">Bit tricks, string helpers, timers</text>
+</g>
+
+<g class="c-blue">
+  <rect x="80" y="486" width="320" height="44" rx="8" stroke-width="0.5"/>
+  <text class="th" x="100" y="504" dominant-baseline="central">main.c</text>
+  <text class="ts" x="100" y="519" dominant-baseline="central">Entry point, startup, arg parsing</text>
+</g>
+
+<!-- tests/ -->
+<g class="c-teal">
+  <rect x="60" y="524" width="200" height="90" rx="12" stroke-width="0.5"/>
+  <text class="th" x="80" y="548">tests/</text>
+  <text class="ts" x="80" y="566">perft_test.c</text>
+  <text class="ts" x="80" y="583">eval_test.c</text>
+  <text class="ts" x="80" y="600">search_test.c</text>
+</g>
+
+<!-- build/ -->
+<g class="c-gray">
+  <rect x="270" y="524" width="160" height="56" rx="12" stroke-width="0.5"/>
+  <text class="th" x="290" y="546">build/</text>
+  <text class="ts" x="290" y="563">Compiled binaries</text>
+</g>
+
+<!-- Build config -->
+<g class="c-amber">
+  <rect x="440" y="524" width="180" height="56" rx="12" stroke-width="0.5"/>
+  <text class="th" x="460" y="546">Build config</text>
+  <text class="ts" x="460" y="563">Makefile / CMakeLists.txt</text>
+</g>
+
+<!-- Root files -->
+<g class="c-gray">
+  <rect x="440" y="70" width="180" height="80" rx="12" stroke-width="0.5"/>
+  <text class="th" x="460" y="92">Root files</text>
+  <text class="ts" x="460" y="110">README.md</text>
+  <text class="ts" x="460" y="127">.gitignore</text>
+</g>
+
+<!-- docs -->
+<g class="c-gray">
+  <rect x="440" y="160" width="180" height="56" rx="12" stroke-width="0.5"/>
+  <text class="th" x="460" y="182">docs/</text>
+  <text class="ts" x="460" y="199">Architecture notes</text>
+</g>
+
+<!-- Dependency arrow -->
+<line x1="240" y1="476" x2="240" y2="524" stroke="#666" stroke-width="0.8" stroke-dasharray="4 4" marker-end="url(#arrow)" fill="none"/>
+
+<!-- bottom label -->
+<text class="ts" x="340" y="685" text-anchor="middle">Each module owns one concept — header exposes the interface, .c owns the implementation</text>
+</svg>
+</body>
+</html>
