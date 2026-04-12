@@ -198,3 +198,11 @@ void board_print(const Board *b) {
     printf("  Zobrist: %llx\n\n",
         (unsigned long long)b->zobrist_key);
 }
+
+int piece_on(const Board *b, int sq) {
+    for (int p = 0; p < 12; p++)
+        if (GET_BIT(b->pieces[p], sq)) return p;
+    return -1;   /* empty square */
+}
+
+
