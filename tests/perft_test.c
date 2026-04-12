@@ -1,8 +1,9 @@
 #include <stdio.h>
-#include "board.h"     /* Board, UndoInfo, make_move, undo_move */
-#include "movegen.h"   /* MoveList, generate_moves              */
 
-long long perft(Board *b, int depth) {
+#include "board.h"   /* Board, UndoInfo, make_move, undo_move */
+#include "movegen.h" /* MoveList, generate_moves              */
+
+long long perft(Board* b, int depth) {
     if (depth == 0) return 1;
 
     MoveList list;
@@ -33,5 +34,5 @@ int main(void) {
         printf("  depth %d: %lld\n", depth, nodes);
     }
 
-    return 0;   
+    return 0;
 }
