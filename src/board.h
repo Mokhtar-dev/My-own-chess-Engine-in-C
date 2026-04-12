@@ -75,6 +75,48 @@
 #define FILE(sq) ((sq) & 7)  /* sq % 8 */
 
 /* -------------------------------------------------------
+   Move encoding (packed into one int)
+
+   bits  0- 5  : from square    (0-63)
+   bits  6-11  : to square      (0-63)
+   bits 12-15  : piece          (0-11)
+   bits 16-19  : promoted piece (0-11, or 0 if none)
+   bit  20     : capture flag
+   bit  21     : double pawn push flag
+   bit  22     : en passant flag
+   bit  23     : castling flag
+------------------------------------------------------- */
+#define ENCODE_MOVE(from, to, piece, promo, cap, dp, ep, castle) \
+    ((from) |                                                    \
+     ((to) << 6) |                                               \
+     ((piece) << 12) |                                           \
+     ((promo) << 16) |                                           \
+     ((cap) << 20) |                                             \
+     ((dp) << 21) |                                              \
+     ((ep) << 22) |                                              \
+     ((castle) << 23))
+
+#define GET_FROM(m) ((m) & 0x3F)
+#define GET_TO(m) (((m) >> 6) & 0x3F)
+#define GET_PIECE(m) (((m) >> 12) & 0xF)
+#define GET_PROMO(m) (((m) >> 16) & 0xF)
+#define IS_CAPTURE(m) (((m) >> 20) & 1)
+#define IS_DOUBLE(m) (((m) >> 21) & 1)
+#define IS_EP(m) (((m) >> 22) & 1)
+#define IS_CASTLE(m) (((m) >> 23) & 1)
+
+/* -------------------------------------------------------
+   Undo state — snapshot before make_move
+------------------------------------------------------- */
+typedef struct {
+    int captured;         /* piece that was captured, or -1 */
+    int castling;         /* castling rights before the move */
+    int en_passant;       /* en passant square before move  */
+    int halfmove_clock;   /* halfmove clock before move     */
+    uint64_t zobrist_key; /* full zobrist key before move   */
+} UndoInfo;
+
+/* -------------------------------------------------------
    Board state
 ------------------------------------------------------- */
 typedef struct {
@@ -99,6 +141,12 @@ extern uint64_t zobrist_castling[16];
 extern uint64_t zobrist_ep[8];
 
 /* -------------------------------------------------------
+   Forward declaration — implemented in movegen.c
+   Needed by make_move to check legality
+------------------------------------------------------- */
+int is_square_attacked(const Board *b, int sq, int by_side);
+
+/* -------------------------------------------------------
    Function prototypes
 ------------------------------------------------------- */
 void board_init(void);                          /* call once at startup   */
@@ -107,5 +155,8 @@ void board_from_fen(Board* b, const char* fen); /* load any FEN string    */
 void board_print(const Board* b);               /* print to terminal      */
 void board_update_occupancy(Board* b);          /* rebuild occupancy[]    */
 uint64_t board_compute_zobrist(const Board* b); /* recompute key from scratch */
+int piece_on(const Board* b, int sq);           /* return piece index on given square, or -1 if empty */
+int make_move(Board* b, int move, UndoInfo* undo); /* make a move, update board and undo info; return 1 if legal, 0 if illegal */
+void undo_move(Board* b, int move, const UndoInfo* undo); /* undo a move using the provided undo info */
 
 #endif
