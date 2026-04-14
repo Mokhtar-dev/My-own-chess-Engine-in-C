@@ -205,4 +205,174 @@ int piece_on(const Board *b, int sq) {
     return -1;   /* empty square */
 }
 
+/* -------------------------------------------------------
+   make_move — apply move to the board
+   Returns 1 if legal (king not left in check), 0 if illegal
+------------------------------------------------------- */
+int make_move(Board *b, int move, UndoInfo *undo) {
+    int from   = GET_FROM(move);
+    int to     = GET_TO(move);
+    int piece  = GET_PIECE(move);
+    int promo  = GET_PROMO(move);
+    int is_cap = IS_CAPTURE(move);
+    int is_dp  = IS_DOUBLE(move);
+    int is_ep  = IS_EP(move);
+    int is_cas = IS_CASTLE(move);
+ 
+    /* --- save undo info --- */
+    undo->castling       = b->castling;
+    undo->en_passant     = b->en_passant;
+    undo->halfmove_clock = b->halfmove_clock;
+    undo->zobrist_key    = b->zobrist_key;
+    undo->captured       = -1;
+ 
+    /* --- update zobrist: remove old state --- */
+    b->zobrist_key ^= zobrist_castling[b->castling];
+    if (b->en_passant != NO_SQ)
+        b->zobrist_key ^= zobrist_ep[FILE(b->en_passant)];
+    b->zobrist_key ^= zobrist_side;
+ 
+    /* --- halfmove clock --- */
+    if (is_cap || piece == WP || piece == BP)
+        b->halfmove_clock = 0;
+    else
+        b->halfmove_clock++;
+ 
+    /* --- handle capture --- */
+    if (is_cap && !is_ep) {
+        int captured = piece_on(b, to);
+        undo->captured = captured;
+        CLEAR_BIT(b->pieces[captured], to);
+        b->zobrist_key ^= zobrist_pieces[captured][to];
+    }
+ 
+    /* --- handle en passant capture --- */
+    if (is_ep) {
+        int ep_sq = (b->side == WHITE) ? to - 8 : to + 8;
+        int captured = (b->side == WHITE) ? BP : WP;
+        undo->captured = captured;
+        CLEAR_BIT(b->pieces[captured], ep_sq);
+        b->zobrist_key ^= zobrist_pieces[captured][ep_sq];
+    }
+ 
+    /* --- move the piece --- */
+    CLEAR_BIT(b->pieces[piece], from);
+    b->zobrist_key ^= zobrist_pieces[piece][from];
+ 
+    if (promo) {
+        SET_BIT(b->pieces[promo], to);
+        b->zobrist_key ^= zobrist_pieces[promo][to];
+    } else {
+        SET_BIT(b->pieces[piece], to);
+        b->zobrist_key ^= zobrist_pieces[piece][to];
+    }
+ 
+    /* --- update en passant square --- */
+    b->en_passant = NO_SQ;
+    if (is_dp) {
+        b->en_passant = (b->side == WHITE) ? to - 8 : to + 8;
+        b->zobrist_key ^= zobrist_ep[FILE(b->en_passant)];
+    }
+ 
+    /* --- handle castling: move the rook --- */
+    if (is_cas) {
+        int rook  = (b->side == WHITE) ? WR : BR;
+        int rfrom, rto;
+        if (to == G1) { rfrom = H1; rto = F1; }
+        else if (to == C1) { rfrom = A1; rto = D1; }
+        else if (to == G8) { rfrom = H8; rto = F8; }
+        else               { rfrom = A8; rto = D8; }
+ 
+        CLEAR_BIT(b->pieces[rook], rfrom);
+        SET_BIT(b->pieces[rook], rto);
+        b->zobrist_key ^= zobrist_pieces[rook][rfrom];
+        b->zobrist_key ^= zobrist_pieces[rook][rto];
+    }
+ 
+    /* --- update castling rights --- */
+    /* any move from/to these squares forfeits the right */
+    const int castling_mask[64] = {
+        [A1] = ~WQS, [E1] = ~(WKS|WQS), [H1] = ~WKS,
+        [A8] = ~BQS, [E8] = ~(BKS|BQS), [H8] = ~BKS,
+    };
+    /* default mask for unaffected squares is 0xF (keep all) */
+    int mask_from = (from < 64 && castling_mask[from]) ? castling_mask[from] : 0xF;
+    int mask_to   = (to   < 64 && castling_mask[to])   ? castling_mask[to]   : 0xF;
+    b->castling &= (mask_from & mask_to);
+    b->zobrist_key ^= zobrist_castling[b->castling];
+ 
+    /* --- switch side --- */
+    b->side ^= 1;
+    if (b->side == WHITE) b->fullmove_number++;
+ 
+    /* --- rebuild occupancy --- */
+    board_update_occupancy(b);
+ 
+    /* --- legality check: own king must not be in check --- */
+    int king_piece = (b->side == WHITE) ? BK : WK; /* side already flipped */
+    int king_sq    = get_lsb(b->pieces[king_piece]);
+    if (is_square_attacked(b, king_sq, b->side)) {
+        undo_move(b, move, undo);
+        return 0;
+    }
+ 
+    return 1;
+}
+ 
+/* -------------------------------------------------------
+   undo_move — restore board to state before make_move
+------------------------------------------------------- */
+void undo_move(Board *b, int move, const UndoInfo *undo) {
+    int from   = GET_FROM(move);
+    int to     = GET_TO(move);
+    int piece  = GET_PIECE(move);
+    int promo  = GET_PROMO(move);
+    int is_ep  = IS_EP(move);
+    int is_cas = IS_CASTLE(move);
+ 
+    /* --- switch side back --- */
+    b->side ^= 1;
+    if (b->side == BLACK) b->fullmove_number--;
+ 
+    /* --- move piece back --- */
+    if (promo) {
+        CLEAR_BIT(b->pieces[promo], to);
+    } else {
+        CLEAR_BIT(b->pieces[piece], to);
+    }
+    SET_BIT(b->pieces[piece], from);
+ 
+    /* --- restore captured piece --- */
+    if (undo->captured != -1 && !is_ep) {
+        SET_BIT(b->pieces[undo->captured], to);
+    }
+ 
+    /* --- restore en passant captured pawn --- */
+    if (is_ep && undo->captured != -1) {
+        int ep_sq = (b->side == WHITE) ? to - 8 : to + 8;
+        SET_BIT(b->pieces[undo->captured], ep_sq);
+    }
+ 
+    /* --- undo castling rook move --- */
+    if (is_cas) {
+        int rook  = (b->side == WHITE) ? WR : BR;
+        int rfrom, rto;
+        if (to == G1) { rfrom = H1; rto = F1; }
+        else if (to == C1) { rfrom = A1; rto = D1; }
+        else if (to == G8) { rfrom = H8; rto = F8; }
+        else               { rfrom = A8; rto = D8; }
+ 
+        CLEAR_BIT(b->pieces[rook], rto);
+        SET_BIT(b->pieces[rook], rfrom);
+    }
+ 
+    /* --- restore saved state --- */
+    b->castling       = undo->castling;
+    b->en_passant     = undo->en_passant;
+    b->halfmove_clock = undo->halfmove_clock;
+    b->zobrist_key    = undo->zobrist_key;
+ 
+    board_update_occupancy(b);
+}
+
 
