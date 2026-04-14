@@ -1,7 +1,6 @@
+#include "board.h"     /* Board, make_move, undo    */
+#include "movegen.h"   /* MoveList, generate_moves  */
 #include <stdio.h>
-
-#include "board.h"   /* Board, UndoInfo, make_move, undo_move */
-#include "movegen.h" /* MoveList, generate_moves              */
 
 long long perft(Board* b, int depth) {
     if (depth == 0) return 1;
