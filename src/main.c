@@ -1,8 +1,11 @@
+#include "board.h"     /* board_init, board_start   */
+#include "movegen.h"   /* movegen_init              */
+#include "uci.h"       /* uci_loop                  */
 #include <stdio.h>
-#include "board.h"
 
 int main(void) {
     board_init();
+    movegen_init();
 
     Board b;
     board_start(&b);
